@@ -121,7 +121,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
     }
  
     private static JFRLogger getLoggerForLevel(String name, String level) {
-        switch(level) {
+        switch(level) { // no hash collisions; should be very fast
             case "all":
             case "trace": return factory.getTrace(name);
             case "debug": return factory.getDebug(name);
@@ -184,7 +184,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
         abstract JFRLogger getNoOp(String name);
     }
     
-    private static class NoOriginLoggerFactory extends AbstractJFRLoggerFactory {
+    private static final class NoOriginLoggerFactory extends AbstractJFRLoggerFactory {
         
         private static final JFRLogger TRACE_LOGGER = new JFRLogger.Trace();
         private static final JFRLogger DEBUG_LOGGER = new JFRLogger.Debug();
@@ -202,7 +202,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
         
     }
     
-    private static class OriginTrackingLoggerFactory extends AbstractJFRLoggerFactory {
+    private static final class OriginTrackingLoggerFactory extends AbstractJFRLoggerFactory {
         @Override JFRLogger getTrace(String name) { return new JFRLogger.Trace(name); }
         @Override JFRLogger getDebug(String name) { return new JFRLogger.Debug(name); }
         @Override JFRLogger getInfo(String name) { return new JFRLogger.Info(name); }

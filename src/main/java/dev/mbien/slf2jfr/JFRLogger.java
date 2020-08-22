@@ -39,6 +39,7 @@ public class JFRLogger extends MarkerIgnoringBase {
     //  - the slf4j format is based on simple {} placeholders
     //  - MessageFormat uses indexed placeholders i.e. {0} {1}
     //  - and String.format uses %x tokens
+    // TODO this is a bit hacky right now
     private static String format(String format, Object arg) {
         
         if(format.contains(ARG_PLACEHOLDER)) {
@@ -313,6 +314,8 @@ public class JFRLogger extends MarkerIgnoringBase {
         return false;
     }
     
+    // like a filter just backwards: each layer logs more levels
+    // unless the event is turned off or no recording is active (which turns all events off)
     static class Error extends JFRLogger {
         
         private static final EventType EVENT_TYPE = EventType.getEventType(JFRLogEvent.Error.class);

@@ -18,7 +18,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
 
     private StaticLoggerBinder() { }
     
-    // required by SLF4J
+    // required by SLF4J, don't remove or rename
     public static final StaticLoggerBinder getSingleton() {
         return instance;
     }
