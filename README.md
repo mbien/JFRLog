@@ -53,3 +53,6 @@ logger name.
 ## requirements
 requires Java 11 to run, Java 14+ to build/test since the tests make use of the JFR
 streaming API.
+
+## license
+This project is distributed under the MIT License, see LICENSE file.
