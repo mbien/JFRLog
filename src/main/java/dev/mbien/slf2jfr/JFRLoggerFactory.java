@@ -1,10 +1,11 @@
 package dev.mbien.slf2jfr;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -20,7 +21,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
     
     private static final JFRLoggerFactory INSTANCE;
     
-    private static final Map<String, String> settings;
+    private static final Map<String, String> levels;
     private static final Map<String, JFRLogger> cache;
     
     private static final AbstractJFRLoggerFactory factory;
@@ -31,41 +32,58 @@ public class JFRLoggerFactory implements ILoggerFactory {
     static {
         PREFIX = "jfrlog.";
 
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> settings = new HashMap<>();
         
-        ((Properties)System.getProperties().clone()).forEach((key, value) -> {
+        // load properties file first and let jvm args overwrite it
+        InputStream stream = JFRLoggerFactory.class.getResourceAsStream("/jfrlog.properties");
+        if(stream != null) {
+            try(Scanner lineScanner = new Scanner(stream)) {
+                while(lineScanner.hasNextLine()) {
+                    String property = lineScanner.nextLine().trim();
+                    if(!property.isEmpty() && property.charAt(0) != '#') {
+                        int split = property.indexOf('=');
+                        if(split > PREFIX.length()) {
+                            settings.put(property.substring(PREFIX.length(), split).trim(),
+                                         property.substring(split+1, property.length()).trim());
+                        }
+                    }
+                }
+            }
+        }
+        
+        // load jvm args from properties
+        System.getProperties().forEach((key, value) -> {
             String keyStr = (String)key;
             if(keyStr.startsWith(PREFIX)) {
-                String valueStr = ((String)value).toLowerCase();
-                map.put(keyStr.substring(PREFIX.length()), valueStr);
+                settings.put(keyStr.substring(PREFIX.length()), ((String)value).toLowerCase());
             }
         });
         
+        // defaults
         boolean loggerCache = false;
         boolean recordOrigin = true;
         String defaultLevel = "trace";
         
-        if(map.isEmpty()) {
-            settings = Collections.emptyMap();
+        if(settings.isEmpty()) {
+            levels = Collections.emptyMap();
         }else{
-            
-            loggerCache  = parseBoolean(map.remove("loggerCache"), loggerCache);
-            recordOrigin = parseBoolean(map.remove("recordOrigin"), recordOrigin);
-            String level = map.remove("default");
+            loggerCache  = parseBoolean(settings.remove("loggerCache"), loggerCache);
+            recordOrigin = parseBoolean(settings.remove("recordOrigin"), recordOrigin);
+            String level = settings.remove("default");
             
             if(level != null && !level.isBlank()) {
                 defaultLevel = level;
             }
             
             // reverse order so that we have the most specific setting first
-            Map<String, String> reverseSorted = new LinkedHashMap<>(map.size());
-            map.entrySet().stream()
+            Map<String, String> reverseSorted = new LinkedHashMap<>(settings.size());
+            settings.entrySet().stream()
                     .sorted(comparingByKey(reverseOrder()))
                     .forEach((entry) -> {
                         reverseSorted.put(entry.getKey(), entry.getValue());
                     });
             
-            settings = Collections.unmodifiableMap(reverseSorted);
+            levels = Collections.unmodifiableMap(reverseSorted);
         }
         
         DEVAULT_LEVEL = defaultLevel;
@@ -84,7 +102,8 @@ public class JFRLoggerFactory implements ILoggerFactory {
         
         INSTANCE = new JFRLoggerFactory();
         
-//        settings.entrySet().forEach(System.out::println);
+//        System.out.println("JFRLOG Settings:");
+//        levels.entrySet().forEach(System.out::println);
         
     }
 
@@ -125,9 +144,9 @@ public class JFRLoggerFactory implements ILoggerFactory {
             }
         }
         
-        String level = settings.get(name);
+        String level = levels.get(name);
         if(level == null || level.isEmpty()) {
-            for (Map.Entry<String, String> setting : settings.entrySet()) {
+            for (Map.Entry<String, String> setting : levels.entrySet()) {
                 if(name.startsWith(setting.getKey())) {
                     level = setting.getValue();
                     break;
