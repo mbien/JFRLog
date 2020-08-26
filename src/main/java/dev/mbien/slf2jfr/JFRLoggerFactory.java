@@ -71,7 +71,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
             recordOrigin = parseBoolean(settings.remove("recordOrigin"), recordOrigin);
             String level = settings.remove("default");
             
-            if(level != null && !level.isBlank()) {
+            if(level != null && !isBlank(level)) {
                 defaultLevel = level;
             }
             
@@ -113,8 +113,21 @@ public class JFRLoggerFactory implements ILoggerFactory {
         return INSTANCE;
     }
     
+    // for JDK8 backwards compatibility
+    private static boolean isBlank(String string) {
+        if(string.isEmpty()) {
+            return true;
+        }else{
+            for (int i = 0; i < string.length(); i++) {
+                if(!Character.isWhitespace(string.charAt(i))) 
+                    return false;
+            }
+        }
+        return true;
+    }
+    
     private static boolean parseBoolean(String value, boolean defaultValue) {
-        if(value == null || value.isBlank()) {
+        if(value == null || isBlank(value)) {
             return defaultValue;
         }
         return Boolean.parseBoolean(value);
