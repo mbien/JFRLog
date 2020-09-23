@@ -4,12 +4,29 @@
     <modelVersion>4.0.0</modelVersion>
     
     <name>JFRLog</name>
-    <description>SLF4J binding to JFR</description>
+    <description>SLF4J binding to the Java Flight Recorder</description>
+    <url>https://github.com/mbien/JFRLog/</url>
     
-    <groupId>dev.mbien</groupId>
+    <groupId>dev.mbien.jfrlog</groupId>
     <artifactId>slf4j-jfr-bridge</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    
+    <licenses>
+        <license>
+          <name>MIT License</name>
+          <url>https://opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+          <name>Michael Bien</name>
+          <email>mbien42@gmail.com</email>
+          <organization>Freelancer</organization>
+          <organizationUrl>https://mbien.dev</organizationUrl>
+        </developer>
+    </developers>
     
     <scm>
         <connection>scm:git@github.com:mbien/JFRLog.git</connection>
