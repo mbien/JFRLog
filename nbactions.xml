@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <actions>
+    
     <action>
-        <actionName>CUSTOM-clean build no tests</actionName>
+        <actionName>CUSTOM-clean build skip tests</actionName>
         <displayName>clean build no tests</displayName>
         <goals>
             <goal>clean</goal>
@@ -11,4 +12,30 @@
             <skipTests>true</skipTests>
         </properties>
     </action>
+    
+    <action>
+        <actionName>CUSTOM-clean deploy</actionName>
+        <displayName>clean deploy</displayName>
+        <goals>
+            <goal>clean</goal>
+            <goal>deploy</goal>
+        </goals>
+    </action>
+    
+    <action>
+        <actionName>CUSTOM-display-dependency-updates</actionName>
+        <displayName>display-dependency-updates</displayName>
+        <goals>
+            <goal>versions:display-dependency-updates</goal>
+        </goals>
+    </action>
+    
+    <action>
+        <actionName>CUSTOM-display-plugin-updates</actionName>
+        <displayName>display-plugin-updates</displayName>
+        <goals>
+            <goal>versions:display-plugin-updates</goal>
+        </goals>
+    </action>
+    
 </actions>
