@@ -18,7 +18,7 @@ public class JFRLoggerTest {
     
 
     @BeforeAll
-    public void testInit() {
+    public static void setup() {
         System.setProperty("jfrlog.tracelogger", "trace");
         System.setProperty("jfrlog.debuglogger", "debug");
         System.setProperty("jfrlog.infologger", "info");
@@ -28,7 +28,7 @@ public class JFRLoggerTest {
     }
     
     @Test
-    public void testLoggerFactory() {
+    public void loggerFactory() {
         
         assertNotNull(LoggerFactory.getILoggerFactory());
         assertEquals(JFRLoggerFactory.getFactory(), LoggerFactory.getILoggerFactory());
@@ -73,7 +73,7 @@ public class JFRLoggerTest {
     }
     
     @Test
-    public void testBasicLog() {
+    public void basicLog() {
 
         Logger log = LoggerFactory.getLogger("tracelogger");
         
@@ -128,7 +128,7 @@ public class JFRLoggerTest {
     }
     
     @Test
-    public void testExceptionLog() {
+    public void exceptionLog() {
 
         Logger log = LoggerFactory.getLogger("errorlogger");
         assertNotNull(log);
@@ -162,7 +162,7 @@ public class JFRLoggerTest {
     }
     
     @Test
-    public void testFormattedLog() {
+    public void formattedLog() {
 
         Logger log = LoggerFactory.getLogger("infologger");
         assertNotNull(log);
@@ -199,7 +199,7 @@ public class JFRLoggerTest {
     }
     
     @Test
-    public void testInfo() {
+    public void info() {
 
         Logger log = LoggerFactory.getLogger("infologger");
         
