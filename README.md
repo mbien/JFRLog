@@ -3,13 +3,13 @@ This project implements a SLF4J logger which records all log messages as Java Fl
 
 
 ## quickstart
-1. replace your SLF4J compatible logging impl with slf4j-jfr-bridge-x.x.jar
-2. start the JVM with JFR enabled (e.g. -XX:StartFlightRecording=filename=logs/dump.jfr,dumponexit=true)
+1. replace your SLF4J compatible logging impl with slf4j-jfr-bridge-x.x.x.jar
+2. start the JVM with JFR enabled (e.g. -XX:StartFlightRecording=filename=logs/recording.jfr,dumponexit=true)
    or enable recording later
 3. check the flight recorder repository or recording dump for log.* events:
 
 ```
-$ jfr print --events "log.*" logs/dump.jfr
+$ jfr print --events "log.*" logs/recording.jfr
 ...
 log.Info {
   startTime = 07:38:02.730
@@ -22,6 +22,15 @@ log.Info {
 ```
 note: JFRLog has currently no fallback, if no recording is active you won't see any logs.
 
+## maven central coordinates
+```xml
+    <!-- depends on slf4j-api already, but feel free to add it anyway -->
+    <dependency>
+        <groupId>dev.mbien.jfrlog</groupId>
+        <artifactId>slf4j-jfr-bridge</artifactId>
+        <version>0.1.0</version>
+    </dependency>
+```
 
 ## configuration
 JFRLog can be configured in two ways: via JVM -D arguments or via a jfrlog.properties
@@ -52,8 +61,8 @@ logger name.
 
 
 ## requirements
-requires Java 11 to run, Java 14+ to build/test since the tests make use of the JFR
-streaming API.
+Requires Java 8+ to run, but Java 14+ to build/test since the junit tests require the JFR
+streaming API (JEP 349).
 
 ## license
 This project is distributed under the MIT License, see LICENSE file.
