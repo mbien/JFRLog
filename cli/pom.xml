@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
+    <modelVersion>4.0.0</modelVersion>
+    
+    <name>JFRLog-CLI</name>
+    <description>CLI scripts for reading JFR records.</description>
+    <url>https://github.com/mbien/JFRLog/</url>
+    
+    <groupId>dev.mbien.jfrlog</groupId>
+    <artifactId>jfrlog-cli</artifactId>
+    <version>0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+        
+    <licenses>
+        <license>
+          <name>MIT License</name>
+          <url>https://opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+          <name>Michael Bien</name>
+          <email>mbien42@gmail.com</email>
+          <organization>Freelancer</organization>
+          <organizationUrl>https://mbien.dev</organizationUrl>
+        </developer>
+    </developers>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>15</maven.compiler.source>
+        <maven.compiler.target>15</maven.compiler.target>
+    </properties>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

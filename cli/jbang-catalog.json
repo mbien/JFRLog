@@ -1,0 +1,11 @@
+
+{
+  "aliases": {
+    "jfrprint": {
+      "script-ref": "JFRPrint.java",
+      "description": "Prints formatted JFR events from JFR dumps or streams them live from repositories."
+    }
+  },
+  "base-ref": "src/main/java/dev/mbien/jfrlog/cli",
+  "description": "JFRLog CLI tools catalog."
+}
