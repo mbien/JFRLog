@@ -8,7 +8,7 @@ This project implements a SLF4J logger which records all log messages as Java Fl
    or enable recording later
 3. check the flight recorder repository or recording dump for log.* events:
 
-```
+```bash
 $ jfr print --events "log.*" logs/recording.jfr
 ...
 log.Info {
@@ -24,12 +24,12 @@ note: JFRLog has currently no fallback, if no recording is active you won't see 
 
 ## maven central coordinates
 ```xml
-    <!-- depends on slf4j-api already, but feel free to add it anyway -->
-    <dependency>
-        <groupId>dev.mbien.jfrlog</groupId>
-        <artifactId>slf4j-jfr-bridge</artifactId>
-        <version>0.1.0</version>
-    </dependency>
+<!-- depends on slf4j-api already, but feel free to add it anyway -->
+<dependency>
+    <groupId>dev.mbien.jfrlog</groupId>
+    <artifactId>slf4j-jfr-bridge</artifactId>
+    <version>0.1.0</version>
+</dependency>
 ```
 
 ## configuration
@@ -60,8 +60,24 @@ it. It is going to guarantee that the same logger instance is returned for a giv
 logger name.
 
 
+## commandline tools
+JFRLog also provides commandline tools for easy JFR record inspection.
+
+Add the jbang catalog:
+```bash
+$ jbang catalog add jfrlog https://github.com/mbien/JFRLog/blob/master/cli/jbang-catalog.json
+```
+
+and use jfrprint to format JFR events (not only log message events).
+```bash
+$ MSG_FORMAT="{eventName,1d} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message}"
+$ jbang jfrprint 10h log.* $MSG_FORMAT dump.jfr
+INFO 2020-10-20 23:07:44.325 [pool-2-thread-11681] Hello There!
+...
+```
+
 ## requirements
-Requires Java 8+ to run, but Java 14+ to build/test since the junit tests require the JFR
+JFRLog requires Java 8+ to run, but Java 14+ to build/test since the junit tests rely on the JFR
 streaming API (JEP 349).
 
 ## license
