@@ -68,13 +68,18 @@ Add the jbang catalog:
 $ jbang catalog add jfrlog https://github.com/mbien/JFRLog/blob/master/cli/jbang-catalog.json
 ```
 
-and use jfrprint to format JFR events (not only log message events).
+and use jfrprint to print JFR events (not only log message events).
 ```bash
-$ MSG_FORMAT="{eventName,1d} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message}"
-$ jbang jfrprint 10h log.* $MSG_FORMAT dump.jfr
-INFO 2020-10-20 23:07:44.325 [pool-2-thread-11681] Hello There!
+$ MSG_PATTERN="{eventName,0d,C} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}]\
+ {origin,1d}: {message} {throwable,o,n}"
+$ jbang jfrprint 10h log.* "$MSG_PATTERN" dump.jfr
+INFO 2020-09-30 16:12:42.458 [main] jfrlogtest.LogTest: Hello There!
+WARN 2020-09-30 16:12:42.461 [main] jfrlogtest.LogTest: don’t panic
+java.lang.IllegalArgumentException: test, please ignore
+	at dev.mbien.jfrlogtest.LogTest.main(LogTest.java:12)
 ...
 ```
+More info in this [blog entry](https://mbien.dev/blog/entry/jfrlog-commandline-tools)
 
 ## requirements
 JFRLog requires Java 8+ to run, but Java 14+ to build/test since the junit tests rely on the JFR
