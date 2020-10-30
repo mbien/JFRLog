@@ -6,6 +6,7 @@
 * MIT License
 * This cli tool is part of the JFRLog project.
 * https://github.com/mbien/JFRLog
+* jbang catalog: https://github.com/mbien/JFRLog/blob/master/cli/jbang-catalog.json
 */
 package dev.mbien.jfrlog.cli;
 
@@ -48,7 +49,10 @@ import jdk.jfr.consumer.RecordedThreadGroup;
  */
 public class JFRPrint {
     
-    private static final String VERSION = "0.1";
+    private static final String VERSION = "0.1.1";
+    
+    private static final String EVENT_NAME_TOKEN = "eventName";
+    private static final String REMAINING_TOKEN = "...";
     
     public static void printUsage() {
         System.out.println("""
@@ -60,12 +64,12 @@ public class JFRPrint {
              jfrprint "*" "*" recording.jfr
 
             print all events of recording.jfr using the provided pattern
-             jfrprint "*" "*" "{eventName} {startTime} [{remaining}]" recording.jfr
+             jfrprint "*" "*" "{eventName} {startTime} [{...}]" recording.jfr
 
             print all events starting with 'log.' of the last two hours of recording.jfr
              jfrprint 2h "log.*" "{eventName,0d,C} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message} {throwable,o,n}" recording.jfr
 
-            stream all jdk.ThreadStart events from the JFR repository using the provided pattern. Somewhat similar to 'tail -f logfile'
+            stream all jdk.ThreadStart events from the JFR repository using the provided pattern. Somewhat similar to 'tail -f logfile | grep "jdk.ThreadStart"'
              jfrprint "*" jdk.ThreadStart "{startTime} name: {thread.javaName}, id: {thread.javaThreadId}, group: {thread.group.name}" /path/to/jfr/repository
             """);
         System.out.println("JFRPrint v" + VERSION + " by Michael Bien https://github.com/mbien/JFRLog/");
@@ -78,7 +82,7 @@ public class JFRPrint {
 //            "5h", 
 //            "*", 
 //            "log.*",
-//            "*",               "{eventName} {startTime} [{remaining}]",
+//            "*",               "{eventName} {startTime} [{...}]",
 //            "log.*",           "{eventName,0d,C} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message} {throwable,o,n}",
 //            "jdk.ThreadStart", "{eventName,0d  } {startTime,dt:yyyy-MM-dd HH:mm:ss:SSS} name: {thread.javaName}, id: {thread.javaThreadId}, group: {thread.group.name}",
 //            "/tmp/test_dump.jfr"};
@@ -178,11 +182,9 @@ public class JFRPrint {
             
             Object value = null;
             
-            if(fieldname.equals("eventName")) { // event name is no field
+            if(fieldname.equals(EVENT_NAME_TOKEN)) { // event name has no field
                 value = event.getEventType().getName();
-            }else if(event.hasField(fieldname)) {
-                value = getCompactValue(event, fieldname, false);
-            }else if(fieldname.equals("remaining")) {
+            }else if(fieldname.equals(REMAINING_TOKEN)) {
                 StringJoiner remaining = new StringJoiner(", ");
                 Set<String> usedFields = format.placeholders;
                 event.getFields().forEach((field) -> {
@@ -190,6 +192,8 @@ public class JFRPrint {
                         remaining.add(field.getName() + ":" + getCompactValue(event, field.getName(), true));
                 });
                 value = remaining.toString();
+            }else if(event.hasField(fieldname)) {
+                value = getCompactValue(event, fieldname, false);
             }
             
             matcher.appendReplacement(sb, formatField(value, format.getParams(index++)));
@@ -338,7 +342,9 @@ public class JFRPrint {
                 this.pattern.matcher(format).results().forEach((m) -> {
 
                     String[] parts = m.group(1).split(",");
-                    String name = parts[0].split("\\.")[0];
+                    String name = parts[0].trim();
+                    if(!name.equals(REMAINING_TOKEN))
+                        name = name.split("\\.")[0];
 
                     Param[] params = new Param[parts.length-1];
                     for (int i = 0; i < params.length; i++) {
