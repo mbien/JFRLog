@@ -412,17 +412,22 @@ public class JFRPrint {
         }
         
         private static Param parse(String str) {
-            if(str.equals("n")) {        return new Param.NewLine();
-            }else if(str.equals("o")) {  return new Param.Optional();
-            }else if(str.equals("c")) {  return new Param.LowerCase();
-            }else if(str.equals("C")) {  return new Param.UpperCase();
-            }else if(str.startsWith("dt:")) {
-                return new Param.InstantPattern(
-                        DateTimeFormatter.ofPattern(str.substring(3))
-                                         .withZone(ZoneId.systemDefault()));
-            }else if(str.endsWith("d")) {return new Param.NDots(Integer.parseInt(str, 0, str.length()-1, 10)); }
-            
-            throw new IllegalArgumentException("unknon parameter: '"+str+"'");
+            return switch(str) {
+                case "n" -> new Param.NewLine();
+                case "o" -> new Param.Optional();
+                case "c" -> new Param.LowerCase();
+                case "C" -> new Param.UpperCase();
+                default -> {
+                    if(str.startsWith("dt:"))
+                        yield new Param.InstantPattern(
+                                DateTimeFormatter.ofPattern(str.substring(3))
+                                                 .withZone(ZoneId.systemDefault()));
+                    else if(str.endsWith("d"))
+                        yield new Param.NDots(Integer.parseInt(str, 0, str.length()-1, 10));
+                    else
+                        throw new IllegalArgumentException("unknon parameter: '"+str+"'");
+                }
+            };
         }
     }
 }
