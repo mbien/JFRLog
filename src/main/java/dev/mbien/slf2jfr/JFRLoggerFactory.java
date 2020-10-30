@@ -115,14 +115,11 @@ public class JFRLoggerFactory implements ILoggerFactory {
     
     // for JDK8 backwards compatibility
     private static boolean isBlank(String string) {
-        if(string.isEmpty()) {
+        if(string.isEmpty())
             return true;
-        }else{
-            for (int i = 0; i < string.length(); i++) {
-                if(!Character.isWhitespace(string.charAt(i))) 
-                    return false;
-            }
-        }
+        for (int i = 0; i < string.length(); i++)
+            if(!Character.isWhitespace(string.charAt(i))) 
+                return false;
         return true;
     }
     
