@@ -117,6 +117,9 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <rulesUri>file:version-rules.xml</rulesUri>
+                        </configuration>
                     </plugin>
                     
                     <plugin>
