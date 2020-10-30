@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVAC_OPTIONS --enable-preview -source 15
-//JAVA_OPTIONS --enable-preview -Xshare:on -Xmx42m -XX:+UseSerialGC
+//JAVA_OPTIONS --enable-preview -Xmx42m -XX:+UseSerialGC
 
 /*
 * MIT License
@@ -48,18 +48,45 @@ import jdk.jfr.consumer.RecordedThreadGroup;
  */
 public class JFRPrint {
     
+    private static final String VERSION = "0.1";
+    
+    public static void printUsage() {
+        System.out.println("""
+            usage: jfrprint <range> <event_name> <message_pattern> <jfr_dump | jfr_repository>
+
+            examples:
+
+            print all events of recording.jfr, this is equivalent to the JDK tool 'jfr print recording.jfr'
+             jfrprint "*" "*" recording.jfr
+
+            print all events of recording.jfr using the provided pattern
+             jfrprint "*" "*" "{eventName} {startTime} [{remaining}]" recording.jfr
+
+            print all events starting with 'log.' of the last two hours of recording.jfr
+             jfrprint 2h "log.*" "{eventName,0d,C} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message} {throwable,o,n}" recording.jfr
+
+            stream all jdk.ThreadStart events from the JFR repository using the provided pattern. Somewhat similar to 'tail -f logfile'
+             jfrprint "*" jdk.ThreadStart "{startTime} name: {thread.javaName}, id: {thread.javaThreadId}, group: {thread.group.name}" /path/to/jfr/repository
+            """);
+        System.out.println("JFRPrint v" + VERSION + " by Michael Bien https://github.com/mbien/JFRLog/");
+    }
+    
     public static void main(String[] args) throws IOException  {
         
-        // examples
-//        args = new String[] { "30d", 
+        // for quick tests
+//        args = new String[] { 
+//            "5h", 
+//            "*", 
 //            "log.*",
+//            "*",               "{eventName} {startTime} [{remaining}]",
 //            "log.*",           "{eventName,0d,C} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message} {throwable,o,n}",
-//            "*",               "{eventName,0d  } {startTime,dt:yyyy-MM-dd HH:mm:ss:SSS} [{remaining}]",
 //            "jdk.ThreadStart", "{eventName,0d  } {startTime,dt:yyyy-MM-dd HH:mm:ss:SSS} name: {thread.javaName}, id: {thread.javaThreadId}, group: {thread.group.name}",
 //            "/tmp/test_dump.jfr"};
         
-        if (args.length < 3)
-            throw new IllegalArgumentException("duration (i.e. 1d2h3s), event name (i.e. jdk.CPU*) and JFR file argument expected");
+        if (args.length < 3) {
+            printUsage();
+            return;
+        }
         
         String durString = args[0].toLowerCase();
         String recording = args[args.length-1];
@@ -73,13 +100,17 @@ public class JFRPrint {
             }
         }    
 
-        if(durString.contains("d")) {
-            durString = "p" + durString.replace("d", "dt");
+        Instant timestamp;
+        if(durString.equals("*")) {
+            timestamp = null;
         }else{
-            durString = "pt" + durString;
+            if(durString.contains("d")) {
+                durString = "p" + durString.replace("d", "dt");
+            }else{
+                durString = "pt" + durString;
+            }
+            timestamp = Instant.now().minus(Duration.parse(durString));     
         }
-        
-        Instant timestamp = Instant.now().minus(Duration.parse(durString));     
         
         Map<String, EventFormat> eventFormats = new HashMap<>();
         List<EventFormat> eventPrefixFormats = new ArrayList<>();
@@ -97,7 +128,7 @@ public class JFRPrint {
             
             es.onEvent((event) -> {
                 
-                if(event.getEndTime().isBefore(timestamp))
+                if(timestamp != null && event.getEndTime().isBefore(timestamp))
                     return;
                 
                 String eventName = event.getEventType().getName();
