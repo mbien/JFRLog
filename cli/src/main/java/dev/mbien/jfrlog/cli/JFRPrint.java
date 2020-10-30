@@ -95,12 +95,12 @@ public class JFRPrint {
         String durString = args[0].toLowerCase();
         String recording = args[args.length-1];
         
-        EventFormat[] formats = new EventFormat[(args.length - 1) / 2];
-        for (int i = 0; i < formats.length; i++) {
+        EventPattern[] patterns = new EventPattern[(args.length - 1) / 2];
+        for (int i = 0; i < patterns.length; i++) {
             if(args.length > 3) {
-                formats[i] = new EventFormat(args[i*2+1], args[i*2+2]);
+                patterns[i] = new EventPattern(args[i*2+1], args[i*2+2]);
             }else{
-                formats[i] = new EventFormat(args[i*2+1]);
+                patterns[i] = new EventPattern(args[i*2+1]);
             }
         }    
 
@@ -116,14 +116,14 @@ public class JFRPrint {
             timestamp = Instant.now().minus(Duration.parse(durString));     
         }
         
-        Map<String, EventFormat> eventFormats = new HashMap<>();
-        List<EventFormat> eventPrefixFormats = new ArrayList<>();
+        Map<String, EventPattern> eventPatterns = new HashMap<>();
+        List<EventPattern> eventPrefixPatterns = new ArrayList<>();
         
-        for (EventFormat format : formats) {
-            if(format.nameAsPrefix) {
-                eventPrefixFormats.add(format);
+        for (EventPattern pattern : patterns) {
+            if(pattern.nameAsPrefix) {
+                eventPrefixPatterns.add(pattern);
             }else{
-                eventFormats.put(format.eventName, format);
+                eventPatterns.put(pattern.eventName, pattern);
             }
         }
         Path path = Path.of(recording);
@@ -137,23 +137,23 @@ public class JFRPrint {
                 
                 String eventName = event.getEventType().getName();
                 
-                EventFormat format = eventFormats.get(eventName);
-                if(format == null) {
-                    for (EventFormat wildcardFormat : eventPrefixFormats) {
-                        if(eventName.startsWith(wildcardFormat.eventName)) {
-                            format = wildcardFormat;
+                EventPattern pattern = eventPatterns.get(eventName);
+                if(pattern == null) {
+                    for (EventPattern wildcardPattern : eventPrefixPatterns) {
+                        if(eventName.startsWith(wildcardPattern.eventName)) {
+                            pattern = wildcardPattern;
                             break;
                         }
                     }
-                    if(format == null) {
+                    if(pattern == null) {
                         return;
                     }
                 }
                 
-                if(format.format == null) {
+                if(pattern.pattern == null) {
                     System.out.println(event.toString());
                 }else{
-                    System.out.println(formatEvent(event, format));
+                    System.out.println(formatEvent(event, pattern));
                 }
             });
             
@@ -162,7 +162,7 @@ public class JFRPrint {
     
     }
 
-    private static String formatEvent(RecordedEvent event, EventFormat format) {
+    private static String formatEvent(RecordedEvent event, EventPattern format) {
         
         StringBuilder sb = new StringBuilder(256);
         Matcher matcher = format.createMatcher();
@@ -305,22 +305,22 @@ public class JFRPrint {
         return false;
     }
       
-    private final static class EventFormat {
+    private final static class EventPattern {
         
-        private final static Pattern pattern = Pattern.compile("\\{([^}]+)\\}");
+        private final static Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
         
-        private final String format;
+        private final String pattern;
         private final String eventName;
         private final boolean nameAsPrefix;
         
         private final Set<String> placeholders;
         private final List<Param[]> parameters;
         
-        private EventFormat(String eventName) {
+        private EventPattern(String eventName) {
             this(eventName, null);
         }
 
-        private EventFormat(String eventName, String format) {
+        private EventPattern(String eventName, String pattern) {
             
             if(eventName.endsWith("*")) {
                 this.eventName = eventName.substring(0, eventName.length()-1);
@@ -330,16 +330,16 @@ public class JFRPrint {
                 this.nameAsPrefix = false;
             }
             
-            this.format = format;
+            this.pattern = pattern;
             
-            if(format == null) {
+            if(pattern == null) {
                 this.placeholders = Collections.emptySet();
                 this.parameters = Collections.emptyList();
             }else{
                 Set<String> set = new HashSet<>();
                 List<Param[]> list = new ArrayList<>();
 
-                this.pattern.matcher(format).results().forEach((m) -> {
+                this.createMatcher().results().forEach((m) -> {
 
                     String[] parts = m.group(1).split(",");
                     String name = parts[0].trim();
@@ -359,7 +359,7 @@ public class JFRPrint {
         }
         
         private Matcher createMatcher() {
-            return pattern.matcher(format);
+            return PLACEHOLDER_PATTERN.matcher(pattern);
         }
         
         private Param[] getParams(int placeholderIndex) {
@@ -367,7 +367,7 @@ public class JFRPrint {
         }
     }
                 
-    private static abstract /*sealed*/ class Param {
+    private static abstract sealed class Param {
 
         public abstract String format(Object value);
         
