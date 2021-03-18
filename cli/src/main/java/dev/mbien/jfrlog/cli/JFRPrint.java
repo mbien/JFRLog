@@ -1,5 +1,5 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//JAVAC_OPTIONS --enable-preview -source 15
+//JAVAC_OPTIONS --enable-preview -source 16
 //JAVA_OPTIONS --enable-preview -Xmx42m -XX:+UseSerialGC
 
 /*
@@ -269,6 +269,7 @@ public class JFRPrint {
     }
 
     // just like event.getValue but for field types. Supports foo.bar paths.
+    // waiting for https://github.com/openjdk/jdk/pull/1606
     private static ValueDescriptor getFieldDeep(RecordedObject recorded, String fieldname) {
         int lastDot = fieldname.lastIndexOf('.');
         if(lastDot == -1) {
