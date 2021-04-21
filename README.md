@@ -4,7 +4,7 @@ This project implements a SLF4J logger which records all log messages as Java Fl
 
 ## quickstart
 1. replace your SLF4J compatible logging impl with slf4j-jfr-bridge-x.x.x.jar
-2. start the JVM with JFR enabled (e.g. -XX:StartFlightRecording=filename=logs/recording.jfr,dumponexit=true)
+2. start the JVM with JFR enabled (e.g. -XX:StartFlightRecording:filename=logs/recording.jfr,dumponexit=true)
    or enable recording later
 3. check the flight recorder repository or recording dump for log.* events:
 
