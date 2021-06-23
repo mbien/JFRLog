@@ -30,8 +30,7 @@
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>16</maven.compiler.source>
-        <maven.compiler.target>16</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
     </properties>
     
     <build>
@@ -42,7 +41,7 @@
                 <version>3.8.1</version>
                 <configuration>
                     <compilerArgs>
-                        <arg>--enable-preview</arg>
+                        <arg>-Xlint:all</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

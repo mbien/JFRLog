@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//JAVAC_OPTIONS --enable-preview -source 16
-//JAVA_OPTIONS --enable-preview -Xmx42m -XX:+UseSerialGC
+//JAVAC_OPTIONS -source 17
+//JAVA_OPTIONS -Xmx42m -XX:+UseSerialGC
 
 /*
 * MIT License
@@ -49,7 +49,7 @@ import jdk.jfr.consumer.RecordedThreadGroup;
  */
 public class JFRPrint {
     
-    private static final String VERSION = "0.1.1";
+    private static final String VERSION = "0.1.2";
     
     private static final String EVENT_NAME_TOKEN = "eventName";
     private static final String REMAINING_TOKEN = "...";
