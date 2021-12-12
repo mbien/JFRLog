@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//JAVAC_OPTIONS -source 17
-//JAVA_OPTIONS -Xmx42m -XX:+UseSerialGC
+//JAVAC_OPTIONS --enable-preview -source 17
+//JAVA_OPTIONS --enable-preview -Xmx42m -XX:+UseSerialGC
 
 /*
 * MIT License
@@ -26,21 +26,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 
 import jdk.jfr.ValueDescriptor;
 import jdk.jfr.consumer.EventStream;
 import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedClassLoader;
 import jdk.jfr.consumer.RecordedEvent;
-import jdk.jfr.consumer.RecordedFrame;
 import jdk.jfr.consumer.RecordedObject;
 import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordedThreadGroup;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Prints formatted JFR events from JFR dumps or streams them from live repositories.
@@ -49,10 +52,14 @@ import jdk.jfr.consumer.RecordedThreadGroup;
  */
 public class JFRPrint {
     
-    private static final String VERSION = "0.1.2";
+    private static final String VERSION = "0.1.3";
     
     private static final String EVENT_NAME_TOKEN = "eventName";
     private static final String REMAINING_TOKEN = "...";
+
+    private static final Collector<CharSequence, ?, String> oneLineJoiner = joining(", ", "[", "]");
+    private static final Collector<CharSequence, ?, String> multiLineJoiner = joining("\n    ", "    ", "");
+    private static final Collector<CharSequence, ?, String> listJoiner = joining(", ");
     
     public static void printUsage() {
         System.out.println("""
@@ -78,9 +85,9 @@ public class JFRPrint {
     public static void main(String[] args) throws IOException  {
         
         // for quick tests
-//        args = new String[] { 
-//            "5h", 
-//            "*", 
+//        args = new String[] {
+//            "5h",
+//            "*",
 //            "log.*",
 //            "*",               "{eventName} {startTime} [{...}]",
 //            "log.*",           "{eventName,0d,C} {startTime,dt:yyyy-MM-dd HH:mm:ss.SSS} [{eventThread.javaName}] {origin,0d}: {message} {throwable,o,n}",
@@ -185,15 +192,12 @@ public class JFRPrint {
             if(fieldname.equals(EVENT_NAME_TOKEN)) { // event name has no field
                 value = event.getEventType().getName();
             }else if(fieldname.equals(REMAINING_TOKEN)) {
-                StringJoiner remaining = new StringJoiner(", ");
-                Set<String> usedFields = format.placeholders;
-                event.getFields().forEach((field) -> {
-                    if(!usedFields.contains(field.getName()))
-                        remaining.add(field.getName() + ":" + getCompactValue(event, field.getName(), true));
-                });
-                value = remaining.toString();
+                value = event.getFields().stream()
+                    .filter((field) -> !format.placeholders.contains(field.getName())) // skip already used fields
+                    .map((field) -> field.getName() + ":" + getFieldValue(event, field.getName(), true))
+                    .collect(listJoiner);
             }else if(event.hasField(fieldname)) {
-                value = getCompactValue(event, fieldname, false);
+                value = getFieldValue(event, fieldname, false);
             }
             
             matcher.appendReplacement(sb, formatField(value, format.getParams(index++)));
@@ -204,68 +208,42 @@ public class JFRPrint {
         return sb.toString();
     }
 
-    private static Object getCompactValue(RecordedObject recorded, String fieldname, boolean oneLine) {
+    private static Object getFieldValue(RecordedObject recorded, String fieldname, boolean oneLine) {
         
         Object value = recorded.getValue(fieldname);
         
-        if(value instanceof RecordedClass recordedClass) {
-            if(oneLine) {
-                value = recordedClass.getName();
-            }else{
-                value = value.toString();
+        return switch (value) {
+            case null                     -> null;
+            case (String s)               -> oneLine ? s.replace('\n', ' ') : s;
+            case (RecordedClass r)        -> oneLine ? r.getName() : r.toString();
+            case (RecordedClassLoader r)  -> oneLine ? r.getName() : r.toString();
+            case (RecordedThread r)       -> oneLine ? r.getJavaName() : r.toString();
+            case (RecordedThreadGroup r)  -> oneLine ? r.getName() : r.toString();
+            case (RecordedStackTrace r)   -> {
+                Collector<CharSequence, ?, String> joiner = oneLine ? oneLineJoiner : multiLineJoiner;
+                yield r.getFrames().stream()
+                        .map(frame -> frame.getMethod().getType().getName() + "." +frame.getMethod().getName() + "(Line:" + frame.getLineNumber() + ")")
+                        .collect(joiner);
             }
-        }else if(value instanceof RecordedClassLoader recordedClassLoader) {
-            if(oneLine) {
-                value = recordedClassLoader.getName();
-            }else{
-                value = value.toString();
+            case (RecordedObject r)       -> {
+                if (oneLine) {
+                    yield r.getFields().stream()
+                            .map(field -> field.getName() + ":" + getFieldValue(r, field.getName(), true))
+                            .collect(oneLineJoiner);
+                } else {
+                    yield r.toString();
+                }
             }
-        }else if(value instanceof RecordedThread recordedThread) {
-            if(oneLine) {
-                value = recordedThread.getJavaName();
-            }else{
-                value = value.toString();
-            }
-        }else if(value instanceof RecordedThreadGroup recordedThreadGroup) {
-            if(oneLine) {
-                value = recordedThreadGroup.getName();
-            }else{
-                value = value.toString();
-            }
-        }else if(value instanceof RecordedStackTrace recordedStackTrace) {
-            List<RecordedFrame> frames = recordedStackTrace.getFrames();
-            StringJoiner list;
-            if(oneLine) {
-                list = new StringJoiner(", ", "[", "]");
-            }else{
-                list = new StringJoiner("\n    ", "    ", "");
-            }   
-            frames.forEach((frame) -> {
-                list.add(frame.getMethod().getType().getName() + "." +frame.getMethod().getName() + "(Line:" + frame.getLineNumber() + ")");
-            });
-            value = list.toString();
-        }else if(value instanceof RecordedObject obj) {
-            if(oneLine) {
-                StringJoiner list = new StringJoiner(", ", "[", "]");
-                obj.getFields().forEach((field) -> {
-                    list.add(field.getName() + ":" + getCompactValue(obj, field.getName(), true));
-                });
-                value = list.toString();
-            }else{
-                value = value.toString();
-            }
-        }else if(value instanceof String string) {
-            if(oneLine) {
-                value = string.replace('\n', ' ');
-            }
-        }else{
-            ValueDescriptor fieldType = getFieldDeep(recorded, fieldname);
+            default                       -> {
+                ValueDescriptor fieldType = getFieldDeep(recorded, fieldname);
 
-            if (fieldType != null && "jdk.jfr.Timestamp".equals(fieldType.getContentType())) {
-                value = recorded.getInstant(fieldname); // converts ticks to Instant
+                if (fieldType != null && "jdk.jfr.Timestamp".equals(fieldType.getContentType())) {
+                    yield recorded.getInstant(fieldname); // converts ticks to Instant
+                } else {
+                    yield value;
+                }
             }
-        }
-        return value;
+        };
     }
 
     // just like event.getValue but for field types. Supports foo.bar paths.
@@ -296,7 +274,7 @@ public class JFRPrint {
         for (Param param : parameters)
             value = param.format(value);
         
-        return value.toString().replace("$", "\\$"); // matchers hate dollars
+        return Matcher.quoteReplacement(value.toString()); // matchers hate $ and \
     }
 
     private static boolean containsOptional(Param[] parameters) {
@@ -343,16 +321,17 @@ public class JFRPrint {
                 this.createMatcher().results().forEach((m) -> {
 
                     String[] parts = m.group(1).split(",");
-                    String name = parts[0].trim();
-                    if(!name.equals(REMAINING_TOKEN))
+                    String name = parts[0].strip();
+                    if(!name.equals(REMAINING_TOKEN)) {
                         name = name.split("\\.")[0];
+                    }
+                    set.add(name);
 
                     Param[] params = new Param[parts.length-1];
                     for (int i = 0; i < params.length; i++) {
-                        params[i] = Param.parse(parts[i+1].trim());
+                        params[i] = Param.parse(parts[i+1].strip());
                     }
                     list.add(params);
-                    set.add(name);
                 });
                 this.placeholders = Collections.unmodifiableSet(set);
                 this.parameters = Collections.unmodifiableList(list);
@@ -385,7 +364,7 @@ public class JFRPrint {
         }
         
         private final static class Optional extends Param {
-            @Override public String format(Object value) { return value == null ? "" : value.toString(); }
+            @Override public String format(Object value) { return Objects.toString(value, ""); }
         }
 
         private final static class InstantPattern extends Param {
