@@ -79,9 +79,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
             Map<String, String> reverseSorted = new LinkedHashMap<>(settings.size());
             settings.entrySet().stream()
                     .sorted(comparingByKey(reverseOrder()))
-                    .forEach((entry) -> {
-                        reverseSorted.put(entry.getKey(), entry.getValue());
-                    });
+                    .forEach(entry -> reverseSorted.put(entry.getKey(), entry.getValue()));
             
             levels = Collections.unmodifiableMap(reverseSorted);
         }
@@ -91,7 +89,7 @@ public class JFRLoggerFactory implements ILoggerFactory {
         if(recordOrigin) {
             factory = new OriginTrackingLoggerFactory();
             if(loggerCache) {
-                cache = new ConcurrentHashMap<String, JFRLogger>(64);
+                cache = new ConcurrentHashMap<>(64);
             }else{
                 cache = null;
             }
