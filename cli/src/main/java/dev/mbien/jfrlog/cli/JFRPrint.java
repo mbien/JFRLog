@@ -1,5 +1,5 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//JAVAC_OPTIONS --enable-preview -source 17
+//JAVAC_OPTIONS --enable-preview -source 18
 //JAVA_OPTIONS --enable-preview -Xmx42m -XX:+UseSerialGC
 
 /*
@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class JFRPrint {
     
-    private static final String VERSION = "0.1.3";
+    private static final String VERSION = "0.1.4";
     
     private static final String EVENT_NAME_TOKEN = "eventName";
     private static final String REMAINING_TOKEN = "...";
