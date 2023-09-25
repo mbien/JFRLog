@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//JAVAC_OPTIONS --enable-preview -source 18
-//JAVA_OPTIONS --enable-preview -Xmx42m -XX:+UseSerialGC
+//JAVAC_OPTIONS -source 21
+//JAVA_OPTIONS -Xmx42m -XX:+UseSerialGC
 
 /*
 * MIT License
@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class JFRPrint {
     
-    private static final String VERSION = "0.1.4";
+    private static final String VERSION = "0.1.5";
     
     private static final String EVENT_NAME_TOKEN = "eventName";
     private static final String REMAINING_TOKEN = "...";
@@ -104,20 +104,20 @@ public class JFRPrint {
         
         EventPattern[] patterns = new EventPattern[(args.length - 1) / 2];
         for (int i = 0; i < patterns.length; i++) {
-            if(args.length > 3) {
+            if (args.length > 3) {
                 patterns[i] = new EventPattern(args[i*2+1], args[i*2+2]);
-            }else{
+            } else{
                 patterns[i] = new EventPattern(args[i*2+1]);
             }
         }    
 
         Instant timestamp;
-        if(durString.equals("*")) {
+        if (durString.equals("*")) {
             timestamp = null;
-        }else{
-            if(durString.contains("d")) {
+        } else {
+            if (durString.contains("d")) {
                 durString = "p" + durString.replace("d", "dt");
-            }else{
+            } else {
                 durString = "pt" + durString;
             }
             timestamp = Instant.now().minus(Duration.parse(durString));     
@@ -127,9 +127,9 @@ public class JFRPrint {
         List<EventPattern> eventPrefixPatterns = new ArrayList<>();
         
         for (EventPattern pattern : patterns) {
-            if(pattern.nameAsPrefix) {
+            if (pattern.nameAsPrefix) {
                 eventPrefixPatterns.add(pattern);
-            }else{
+            } else {
                 eventPatterns.put(pattern.eventName, pattern);
             }
         }
@@ -139,27 +139,27 @@ public class JFRPrint {
             
             es.onEvent((event) -> {
                 
-                if(timestamp != null && event.getEndTime().isBefore(timestamp))
+                if (timestamp != null && event.getEndTime().isBefore(timestamp))
                     return;
                 
                 String eventName = event.getEventType().getName();
                 
                 EventPattern pattern = eventPatterns.get(eventName);
-                if(pattern == null) {
+                if (pattern == null) {
                     for (EventPattern wildcardPattern : eventPrefixPatterns) {
-                        if(eventName.startsWith(wildcardPattern.eventName)) {
+                        if (eventName.startsWith(wildcardPattern.eventName)) {
                             pattern = wildcardPattern;
                             break;
                         }
                     }
-                    if(pattern == null) {
+                    if (pattern == null) {
                         return;
                     }
                 }
                 
-                if(pattern.pattern == null) {
+                if (pattern.pattern == null) {
                     System.out.println(event.toString());
-                }else{
+                } else {
                     System.out.println(formatEvent(event, pattern));
                 }
             });
@@ -175,28 +175,28 @@ public class JFRPrint {
         Matcher matcher = format.createMatcher();
         
         int index = 0;
-        while(matcher.find()) {
+        while (matcher.find()) {
             
             String placeholder = matcher.group(1);
             
             String fieldname;
             int seperator = placeholder.indexOf(',');
-            if(seperator != -1) {
+            if (seperator != -1) {
                 fieldname = placeholder.substring(0, seperator);
-            }else{
+            } else {
                 fieldname = placeholder;
             }
             
             Object value = null;
             
-            if(fieldname.equals(EVENT_NAME_TOKEN)) { // event name has no field
+            if (fieldname.equals(EVENT_NAME_TOKEN)) { // event name has no field
                 value = event.getEventType().getName();
-            }else if(fieldname.equals(REMAINING_TOKEN)) {
+            } else if (fieldname.equals(REMAINING_TOKEN)) {
                 value = event.getFields().stream()
                     .filter((field) -> !format.placeholders.contains(field.getName())) // skip already used fields
                     .map((field) -> field.getName() + ":" + getFieldValue(event, field.getName(), true))
                     .collect(listJoiner);
-            }else if(event.hasField(fieldname)) {
+            } else if (event.hasField(fieldname)) {
                 value = getFieldValue(event, fieldname, false);
             }
             
@@ -213,19 +213,19 @@ public class JFRPrint {
         Object value = recorded.getValue(fieldname);
         
         return switch (value) {
-            case null                     -> null;
-            case (String s)               -> oneLine ? s.replace('\n', ' ') : s;
-            case (RecordedClass r)        -> oneLine ? r.getName() : r.toString();
-            case (RecordedClassLoader r)  -> oneLine ? r.getName() : r.toString();
-            case (RecordedThread r)       -> oneLine ? r.getJavaName() : r.toString();
-            case (RecordedThreadGroup r)  -> oneLine ? r.getName() : r.toString();
-            case (RecordedStackTrace r)   -> {
+            case null                   -> null;
+            case String s               -> oneLine ? s.replace('\n', ' ') : s;
+            case RecordedClass r        -> oneLine ? r.getName() : r.toString();
+            case RecordedClassLoader r  -> oneLine ? r.getName() : r.toString();
+            case RecordedThread r       -> oneLine ? r.getJavaName() : r.toString();
+            case RecordedThreadGroup r  -> oneLine ? r.getName() : r.toString();
+            case RecordedStackTrace r   -> {
                 Collector<CharSequence, ?, String> joiner = oneLine ? oneLineJoiner : multiLineJoiner;
                 yield r.getFrames().stream()
                         .map(frame -> frame.getMethod().getType().getName() + "." +frame.getMethod().getName() + "(Line:" + frame.getLineNumber() + ")")
                         .collect(joiner);
             }
-            case (RecordedObject r)       -> {
+            case RecordedObject r       -> {
                 if (oneLine) {
                     yield r.getFields().stream()
                             .map(field -> field.getName() + ":" + getFieldValue(r, field.getName(), true))
@@ -234,7 +234,7 @@ public class JFRPrint {
                     yield r.toString();
                 }
             }
-            default                       -> {
+            default                     -> {
                 ValueDescriptor fieldType = getFieldDeep(recorded, fieldname);
 
                 if (fieldType != null && "jdk.jfr.Timestamp".equals(fieldType.getContentType())) {
@@ -250,9 +250,9 @@ public class JFRPrint {
     // waiting for https://github.com/openjdk/jdk/pull/1606
     private static ValueDescriptor getFieldDeep(RecordedObject recorded, String fieldname) {
         int lastDot = fieldname.lastIndexOf('.');
-        if(lastDot == -1) {
+        if (lastDot == -1) {
             return getFieldShallow(recorded, fieldname);
-        }else{
+        } else {
             RecordedObject parent = recorded.getValue(fieldname.substring(0, lastDot));
             String name = fieldname.substring(lastDot+1, fieldname.length());
             return getFieldShallow(parent, name);
@@ -268,7 +268,7 @@ public class JFRPrint {
 
     private static String formatField(Object value, Param[] parameters) {
         
-        if(value == null)
+        if (value == null)
             return containsOptional(parameters) ? "" : "N/A";
         
         for (Param param : parameters)
@@ -279,7 +279,7 @@ public class JFRPrint {
 
     private static boolean containsOptional(Param[] parameters) {
         for (Param parameter : parameters)
-            if(parameter instanceof Param.Optional) 
+            if (parameter instanceof Param.Optional) 
                 return true;
         return false;
     }
@@ -301,20 +301,20 @@ public class JFRPrint {
 
         private EventPattern(String eventName, String pattern) {
             
-            if(eventName.endsWith("*")) {
+            if (eventName.endsWith("*")) {
                 this.eventName = eventName.substring(0, eventName.length()-1);
                 this.nameAsPrefix = true;
-            }else{
+            } else {
                 this.eventName = eventName;
                 this.nameAsPrefix = false;
             }
             
             this.pattern = pattern;
             
-            if(pattern == null) {
+            if (pattern == null) {
                 this.placeholders = Collections.emptySet();
                 this.parameters = Collections.emptyList();
-            }else{
+            } else {
                 Set<String> set = new HashSet<>();
                 List<Param[]> list = new ArrayList<>();
 
@@ -322,7 +322,7 @@ public class JFRPrint {
 
                     String[] parts = m.group(1).split(",");
                     String name = parts[0].strip();
-                    if(!name.equals(REMAINING_TOKEN)) {
+                    if (!name.equals(REMAINING_TOKEN)) {
                         name = name.split("\\.")[0];
                     }
                     set.add(name);
@@ -392,17 +392,17 @@ public class JFRPrint {
         }
         
         private static Param parse(String str) {
-            return switch(str) {
+            return switch (str) {
                 case "n" -> new Param.NewLine();
                 case "o" -> new Param.Optional();
                 case "c" -> new Param.LowerCase();
                 case "C" -> new Param.UpperCase();
                 default -> {
-                    if(str.startsWith("dt:"))
+                    if (str.startsWith("dt:"))
                         yield new Param.InstantPattern(
                                 DateTimeFormatter.ofPattern(str.substring(3))
                                                  .withZone(ZoneId.systemDefault()));
-                    else if(str.endsWith("d"))
+                    else if (str.endsWith("d"))
                         yield new Param.NDots(Integer.parseInt(str, 0, str.length()-1, 10));
                     else
                         throw new IllegalArgumentException("unknon parameter: '"+str+"'");
